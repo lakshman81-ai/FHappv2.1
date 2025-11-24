@@ -10,7 +10,16 @@ if (!API_KEY) {
   console.warn("Gemini API Key is not set. AI features will be disabled.");
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY! });
+// Safely initialize AI client to prevent crash if key is missing
+let ai: GoogleGenAI | null = null;
+try {
+    if (API_KEY) {
+        ai = new GoogleGenAI({ apiKey: API_KEY });
+    }
+} catch (e) {
+    console.error("Failed to initialize Google GenAI client:", e);
+}
+
 const textModel = 'gemini-2.5-flash';
 const visionModel = 'gemini-2.5-flash'; // This model supports vision
 
@@ -26,7 +35,7 @@ const fileToGenerativePart = async (file: File) => {
 };
 
 export const identifyFood = async (imageFile: File): Promise<string> => {
-  if (!API_KEY) throw new Error("API Key is missing.");
+  if (!API_KEY || !ai) throw new Error("API Key is missing or AI client not initialized.");
   const imagePart = await fileToGenerativePart(imageFile);
   const prompt = "Identify the single, most prominent food item in this image. Respond with only the name of the food (e.g., \"Apple\", \"Banana\", \"Almonds\"). Do not add any other text or punctuation.";
 
@@ -39,7 +48,7 @@ export const identifyFood = async (imageFile: File): Promise<string> => {
 };
 
 export const getAISummary = async (foodName: string, context: string): Promise<string> => {
-    if (!API_KEY) throw new Error("API Key is missing.");
+    if (!API_KEY || !ai) throw new Error("API Key is missing or AI client not initialized.");
     const systemPrompt = "You are a friendly and knowledgeable nutritionist. Based *only* on the provided text snippet about a food, provide a concise, easy-to-read summary for a layperson. Synthesize the given information into a coherent paragraph. Do not add any information not present in the text. Format your response using basic markdown.";
     
     const userQuery = `Here is the information for ${foodName}:\n\n"${context}"\n\nPlease provide a summary of only this information.`;
@@ -63,7 +72,7 @@ export interface RecipeContext {
 }
 
 export const getRecipeIdea = async (context: RecipeContext, mode: 'food' | 'herb' = 'food'): Promise<StructuredRecipe> => {
-    if (!API_KEY) throw new Error("API Key is missing.");
+    if (!API_KEY || !ai) throw new Error("API Key is missing or AI client not initialized.");
     
     const isRemedy = mode === 'herb';
     
