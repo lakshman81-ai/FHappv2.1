@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Papa from 'papaparse';
 import type { FoodData, Basis, AILoadingState, StructuredRecipe, SearchResult, SearchMatch } from './types';
 import { CSV_URL, HERB_CSV_URL, sectionDefinitions } from './constants';
 import { identifyFood, getRecipeIdea, RecipeContext } from './services/geminiService';
@@ -13,7 +14,6 @@ import { mockFoodData } from './mockData';
 // External PapaParse type definition for window object
 declare global {
     interface Window {
-        Papa: any;
         google: any;
     }
 }
@@ -142,14 +142,10 @@ export default function App() {
 
     const robustProcessCsv = (text: string, isHerbMode: boolean): FoodData => {
         const result: FoodData = {};
-        if (!window.Papa) {
-            console.error("PapaParse not loaded");
-            return result;
-        }
 
         const isFlattened = isHerbMode;
 
-        window.Papa.parse(text, {
+        Papa.parse(text, {
             header: true,
             skipEmptyLines: true,
             complete: (results: any) => {
